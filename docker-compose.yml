@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   nginx:
     image: nginx:latest
@@ -8,7 +10,7 @@ services:
       - ./nginx/nginx.conf.template:/etc/nginx/templates/nginx.conf.template:ro
       - ./scripts/health_agent.sh:/usr/local/bin/health_agent.sh:ro
     environment:
-      - ACTIVE_POOL=${ACTIVE_POOL}
+      - ACTIVE_POOL=${ACTIVE_POOL:-blue}
       - RELEASE_ID=${RELEASE_ID_BLUE}
       - NGINX_ENVSUBST_TEMPLATE_SUFFIX=.template
     depends_on:
@@ -27,6 +29,8 @@ services:
     container_name: app_blue
     environment:
       - RELEASE_ID=${RELEASE_ID_BLUE}
+    expose:
+      - "8080"
     ports:
       - "8081:8080"
 
@@ -35,5 +39,7 @@ services:
     container_name: app_green
     environment:
       - RELEASE_ID=${RELEASE_ID_GREEN}
+    expose:
+      - "8080"
     ports:
       - "8082:8080"
