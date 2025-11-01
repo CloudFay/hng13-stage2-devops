@@ -5,7 +5,7 @@ services:
     image: nginx:latest
     container_name: nginx-proxy
     ports:
-      - "${PORT:-8080}:80"
+      - "${PORT:-8080}:80"  # Nginx exposed on localhost:8080
     volumes:
       - ./nginx/nginx.conf.template:/etc/nginx/templates/nginx.conf.template:ro
       - ./scripts/health_agent.sh:/usr/local/bin/health_agent.sh:ro
@@ -16,13 +16,16 @@ services:
     depends_on:
       - app_blue
       - app_green
+    restart: unless-stopped
     command: >
       /bin/sh -c "
-      chmod +x /usr/local/bin/health_agent.sh &&
-      envsubst '\$ACTIVE_POOL \$RELEASE_ID' < /etc/nginx/templates/nginx.conf.template > /etc/nginx/nginx.conf &&
-      nginx &&
-      /usr/local/bin/health_agent.sh
+        chmod +x /usr/local/bin/health_agent.sh &&
+        envsubst '\$ACTIVE_POOL \$RELEASE_ID' < /etc/nginx/templates/nginx.conf.template > /etc/nginx/nginx.conf &&
+        nginx -g 'daemon off;' & 
+        /usr/local/bin/health_agent.sh
       "
+    networks:
+      - bluegreen_net
 
   app_blue:
     image: ${BLUE_IMAGE}
@@ -30,9 +33,12 @@ services:
     environment:
       - RELEASE_ID=${RELEASE_ID_BLUE}
     expose:
-      - "8080"
+      - "8080"        # Internal port (used by nginx)
     ports:
-      - "8081:8080"
+      - "8081:8080"   # External access for chaos testing
+    restart: unless-stopped
+    networks:
+      - bluegreen_net
 
   app_green:
     image: ${GREEN_IMAGE}
@@ -43,3 +49,10 @@ services:
       - "8080"
     ports:
       - "8082:8080"
+    restart: unless-stopped
+    networks:
+      - bluegreen_net
+
+networks:
+  bluegreen_net:
+    driver: bridge

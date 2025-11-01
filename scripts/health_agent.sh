@@ -16,7 +16,7 @@ log() {
 
 log "Starting Health Agent | ACTIVE_POOL=$ACTIVE"
 
-sleep 5  # give apps time to boot
+sleep 5  # allow apps to boot
 
 while true; do
   if curl -sf --max-time 2 "$BLUE_URL" >/dev/null; then
@@ -31,13 +31,13 @@ while true; do
               nginx -s reload
               log "Switched to BLUE and reloaded Nginx ✅"
           else
-              log "Nginx config invalid, keeping current config ❌"
+              log "Invalid Nginx config, keeping current setup ❌"
           fi
       fi
   else
       # Blue unhealthy
       if [ "$ACTIVE" != "green" ]; then
-          log "Blue unhealthy → switching to green"
+          log "Blue unhealthy → switching to GREEN"
           ACTIVE="green"
           echo "$ACTIVE" > "$STATE_FILE"
           export ACTIVE_POOL=$ACTIVE
@@ -46,9 +46,10 @@ while true; do
               nginx -s reload
               log "Switched to GREEN and reloaded Nginx ✅"
           else
-              log "Nginx config invalid, keeping current config ❌"
+              log "Invalid Nginx config, keeping current setup ❌"
           fi
       fi
   fi
+  log "Traffic now served by: $ACTIVE ✅"
   sleep 5
 done
