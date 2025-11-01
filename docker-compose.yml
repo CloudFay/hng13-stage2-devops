@@ -1,11 +1,9 @@
-version: '3.8'
-
 services:
   nginx:
     image: nginx:latest
     container_name: nginx-proxy
     ports:
-      - "${PORT:-8080}:80"  # Nginx exposed on localhost:8080
+      - "${PORT:-8080}:80"  # Public entrypoint
     volumes:
       - ./nginx/nginx.conf.template:/etc/nginx/templates/nginx.conf.template:ro
       - ./scripts/health_agent.sh:/usr/local/bin/health_agent.sh:ro
@@ -19,7 +17,6 @@ services:
     restart: unless-stopped
     command: >
       /bin/sh -c "
-        chmod +x /usr/local/bin/health_agent.sh &&
         envsubst '\$ACTIVE_POOL \$RELEASE_ID' < /etc/nginx/templates/nginx.conf.template > /etc/nginx/nginx.conf &&
         nginx -g 'daemon off;' & 
         /usr/local/bin/health_agent.sh
@@ -33,9 +30,9 @@ services:
     environment:
       - RELEASE_ID=${RELEASE_ID_BLUE}
     expose:
-      - "8080"        # Internal port (used by nginx)
+      - "8080"
     ports:
-      - "8081:8080"   # External access for chaos testing
+      - "8081:8080"
     restart: unless-stopped
     networks:
       - bluegreen_net
